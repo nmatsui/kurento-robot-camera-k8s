@@ -1,0 +1,6 @@
+lt-cred-mech
+no-tls
+no-dtls
+listening-port=80
+realm=coturn.example.com
+user=username:password
