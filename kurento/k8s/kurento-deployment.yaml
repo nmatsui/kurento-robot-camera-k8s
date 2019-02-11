@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kurento
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kurento
+  template:
+    metadata:
+      labels:
+        app: kurento
+    spec:
+      containers:
+      - name: kurento
+        image: kurento/kurento-media-server:6.9.0
+        ports:
+        - containerPort: 8888
+          name: kurento
+        volumeMounts:
+        - name: kurento-turnserver
+          mountPath: "/etc/kurento/modules/kurento/WebRtcEndpoint.conf.ini"
+          subPath: "WebRtcEndpoint.conf.ini"
+      volumes:
+      - name: kurento-turnserver
+        secret:
+          secretName: "kurento-turnserver"

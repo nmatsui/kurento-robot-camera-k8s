@@ -2,6 +2,7 @@ node_modules/
 signaling/dist/server.js
 signaling/static/js/client.js
 coturn/turnserver.conf
+kurento/WebRtcEndpoint.conf.ini
 .node-version
 .python-version
 .DS_Store
