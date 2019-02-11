@@ -14,5 +14,8 @@ module.exports = {
     },
     "rules": {
         "no-console": 1
+    },
+    "globals": {
+        "iceServers": true
     }
 };

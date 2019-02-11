@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coturn-tcp
+  labels:
+    app: coturn
+spec:
+  type: LoadBalancer
+  selector:
+    app: coturn
+  ports:
+  - name: coturn-tcp
+    port: 80
+    protocol: TCP
+    targetPort: coturn

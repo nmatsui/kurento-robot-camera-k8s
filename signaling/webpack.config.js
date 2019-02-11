@@ -3,7 +3,8 @@ const nodeExternals = require('webpack-node-externals');
 
 const nodeSrc  = path.resolve(__dirname, 'src/node')
 const nodeDist = path.resolve(__dirname, 'dist')
-const webSrc  = path.resolve(__dirname, 'src/web')
+const webJsSrc  = path.resolve(__dirname, 'src/web/js')
+const webScssSrc  = path.resolve(__dirname, 'src/web/scss')
 const webDist = path.resolve(__dirname, 'static/js')
 
 const nodeConfig = {
@@ -38,7 +39,7 @@ const nodeConfig = {
 const webConfig = {
     mode: 'development',
     target: 'web',
-    entry: ['@babel/polyfill', webSrc + '/index.js'],
+    entry: ['@babel/polyfill', webJsSrc + '/index.js', webScssSrc + '/index.scss'],
     output: {
         path: webDist,
         filename: 'client.js'
@@ -54,12 +55,24 @@ const webConfig = {
                         presets: ['@babel/preset-env']
                     }
                 }
+            },
+            {
+                test: /\.scss$/,
+                use: [
+                    'style-loader',
+                    'css-loader',
+                ],
             }
         ]
     },
     resolve: {
         extensions: ['.js']
     },
+    externals: [
+        {
+            jquery: 'jQuery'
+        }
+    ],
     plugins: []
 };
 
