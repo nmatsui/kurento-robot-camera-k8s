@@ -28,7 +28,7 @@
     "console-log-html": "^2.0.2",
     "ejs": "^2.6.1",
     "express": "^4.16.4",
-    "kurento-client": "^6.9.0",
+    "kurento-client": "Kurento/kurento-client-js",
     "kurento-utils": "^6.9.0",
     "log4js": "^4.0.2",
     "socket.io": "^2.2.0",
