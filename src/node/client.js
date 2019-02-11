@@ -22,13 +22,13 @@ export function register(server) {
 
         socket.on('start', (sdpOffer) => {
             logger.info(`Connection ${socket.id} received 'start' sdpOffer => ${sdpOffer}`);
-            start(socket.id, socket, sdpOffer, function(error, sdpAnswer) {
-                if (error) {
+            start(socket.id, socket, sdpOffer)
+                .then((sdpAnswer) => {
+                    socket.emit('startResponse', sdpAnswer);
+                })
+                .catch((error) => {
                     socket.emit('error', error);
-                    return;
-                }
-                socket.emit('startResponse', sdpAnswer);
-            });
+                });
         });
 
         socket.on('stop', () => {
@@ -45,45 +45,67 @@ export function register(server) {
 
 let sessions = {};
 let candidatesQueue = {};
-let kurentoClient = null;
 
-// Recover kurentoClient for the first time.
-function getKurentoClient(callback) {
-    if (kurentoClient !== null) {
-        return callback(null, kurentoClient);
-    }
-
-    kurento(ws_uri, function(error, _kurentoClient) {
-        if (error) {
-            logger.error("Could not find media server at address " + ws_uri);
-            return callback("Could not find media server at address" + ws_uri
-                    + ". Exiting with error " + error);
+function start(sessionId, socket, sdpOffer) {
+    return new Promise((resolve, reject) => {
+        if (!sessionId) {
+            reject('Cannot use undefined sessionId');
+            return;
         }
 
-        kurentoClient = _kurentoClient;
-        callback(null, kurentoClient);
+        getKurentoClient()
+            .then(createMediaPipeline)
+            .then(createWebRtcEndpoint)
+            .then(loopBack)
+            .then(connectMediaStream)
+            .then((sdpAnswer) => {
+                resolve(sdpAnswer);
+            })
+            .catch((error) => {
+                reject(error);
+            });
     });
-}
 
-function start(sessionId, socket, sdpOffer, callback) {
-    if (!sessionId) {
-        return callback('Cannot use undefined sessionId');
-    }
-
-    getKurentoClient(function(error, kurentoClient) {
-        if (error) {
-            return callback(error);
-        }
-
-        kurentoClient.create('MediaPipeline', function(error, pipeline) {
-            if (error) {
-                return callback(error);
+    function getKurentoClient() {
+        let kurentoClient = null;
+        return new Promise((resolve, reject) => {
+            if (kurentoClient !== null) {
+                resolve(kurentoClient);
+                return;
             }
 
-            createMediaElements(pipeline, function(error, webRtcEndpoint) {
+            kurento(ws_uri, (error, _kurentoClient) => {
+                if (error) {
+                    logger.error(`Could not find media server at address ws_uri`);
+                    reject(`Could not find media server at address ${ws_uri}. Exiting with error ${error}`);
+                    return;
+                }
+
+                kurentoClient = _kurentoClient;
+                resolve(kurentoClient);
+            });
+        });
+    }
+
+    function createMediaPipeline(kurentoClient) {
+        return new Promise((resolve, reject) => {
+            kurentoClient.create('MediaPipeline', (error, pipeline) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                resolve(pipeline);
+            });
+        });
+    }
+
+    function createWebRtcEndpoint(pipeline) {
+        return new Promise((resolve, reject) => {
+            pipeline.create('WebRtcEndpoint', (error, webRtcEndpoint) => {
                 if (error) {
                     pipeline.release();
-                    return callback(error);
+                    reject(error);
+                    return;
                 }
 
                 if (candidatesQueue[sessionId]) {
@@ -93,58 +115,54 @@ function start(sessionId, socket, sdpOffer, callback) {
                     }
                 }
 
-                connectMediaElements(webRtcEndpoint, function(error) {
-                    if (error) {
-                        pipeline.release();
-                        return callback(error);
-                    }
-
-                    webRtcEndpoint.on('OnIceCandidate', function(event) {
-                        var candidate = kurento.getComplexType('IceCandidate')(event.candidate);
-                        socket.emit('iceCandidate', candidate);
-                    });
-
-                    webRtcEndpoint.processOffer(sdpOffer, function(error, sdpAnswer) {
-                        if (error) {
-                            pipeline.release();
-                            return callback(error);
-                        }
-
-                        sessions[sessionId] = {
-                            'pipeline' : pipeline,
-                            'webRtcEndpoint' : webRtcEndpoint
-                        }
-                        return callback(null, sdpAnswer);
-                    });
-
-                    webRtcEndpoint.gatherCandidates(function(error) {
-                        if (error) {
-                            return callback(error);
-                        }
-                    });
+                resolve({
+                    'pipeline' : pipeline,
+                    'webRtcEndpoint' : webRtcEndpoint,
                 });
             });
         });
-    });
-}
+    }
 
-function createMediaElements(pipeline, callback) {
-    pipeline.create('WebRtcEndpoint', function(error, webRtcEndpoint) {
-        if (error) {
-            return callback(error);
-        }
+    function loopBack(resources) {
+        return new Promise((resolve, reject) => {
+            resources.webRtcEndpoint.connect(resources.webRtcEndpoint, (error) => {
+                if (error) {
+                    resources.pipeline.release();
+                    reject(error);
+                    return;
+                }
+                resolve(resources);
+            });
+        });
+    }
 
-        return callback(null, webRtcEndpoint);
-    });
-}
+    function connectMediaStream(resources) {
+        return new Promise((resolve, reject) => {
+            resources.webRtcEndpoint.on('OnIceCandidate', (event) => {
+                var candidate = kurento.getComplexType('IceCandidate')(event.candidate);
+                socket.emit('iceCandidate', candidate);
+            });
 
-function connectMediaElements(webRtcEndpoint, callback) {
-    webRtcEndpoint.connect(webRtcEndpoint, function(error) {
-        if (error) {
-            return callback(error);
-        }
-        return callback(null);
-    });
+            resources.webRtcEndpoint.processOffer(sdpOffer, (error, sdpAnswer) => {
+                if (error) {
+                    resources.pipeline.release();
+                    reject(error);
+                    return;
+                }
+
+                sessions[sessionId] = resources;
+
+                resources.webRtcEndpoint.gatherCandidates((error) => {
+                    if (error) {
+                        resources.pipeline.release();
+                        reject(error);
+                        return;
+                    }
+                    resolve(sdpAnswer);
+                });
+            });
+        });
+    }
 }
 
 function stop(sessionId) {
