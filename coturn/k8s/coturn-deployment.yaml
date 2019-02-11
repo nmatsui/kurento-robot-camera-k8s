@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coturn
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: coturn
+  template:
+    metadata:
+      labels:
+        app: coturn
+    spec:
+      containers:
+      - name: coturn
+        image: k8saksacr.azurecr.io/tech-sketch/coturn:4.5.0.8
+        imagePullPolicy: Always
+        args: ["-c", "/opt/coturn/turnserver.conf"]
+        ports:
+        - containerPort: 80
+          name: coturn
+        volumeMounts:
+        - name: conf
+          mountPath: "/opt/coturn"
+          readOnly: true
+      volumes:
+      - name: conf
+        secret:
+          secretName: "turnserver-conf"
