@@ -20,41 +20,25 @@ export function register(server) {
             stop(socket.id);
         });
 
-        socket.on('message', (_message) => {
-            var message = JSON.parse(_message);
-            logger.info(`Connection ${socket.id} received message ${message.id}`);
+        socket.on('start', (sdpOffer) => {
+            logger.info(`Connection ${socket.id} received 'start' sdpOffer => ${sdpOffer}`);
+            start(socket.id, socket, sdpOffer, function(error, sdpAnswer) {
+                if (error) {
+                    socket.emit('error', error);
+                    return;
+                }
+                socket.emit('startResponse', sdpAnswer);
+            });
+        });
 
-            switch (message.id) {
-                case 'start':
-                    start(socket.id, socket, message.sdpOffer, function(error, sdpAnswer) {
-                        if (error) {
-                            return socket.send(JSON.stringify({
-                                id : 'error',
-                                message : error
-                            }));
-                        }
-                        socket.send(JSON.stringify({
-                            id : 'startResponse',
-                            sdpAnswer : sdpAnswer
-                        }));
-                    });
-                    break;
+        socket.on('stop', () => {
+            logger.info(`Connection ${socket.id} received 'stop'`);
+            stop(socket.id);
+        });
 
-                case 'stop':
-                    stop(socket.id);
-                    break;
-
-                case 'onIceCandidate':
-                    onIceCandidate(socket.id, message.candidate);
-                    break;
-
-                default:
-                    socket.send(JSON.stringify({
-                        id : 'error',
-                        message : 'Invalid message ' + message
-                    }));
-                    break;
-            }
+        socket.on('onIceCandidate', (candidate) => {
+            logger.info(`Connection ${socket.id} received 'onIceCandidate', candidate => ${candidate}`);
+            onIceCandidate(socket.id, candidate);
         });
     });
 }
@@ -117,10 +101,7 @@ function start(sessionId, socket, sdpOffer, callback) {
 
                     webRtcEndpoint.on('OnIceCandidate', function(event) {
                         var candidate = kurento.getComplexType('IceCandidate')(event.candidate);
-                        socket.send(JSON.stringify({
-                            id : 'iceCandidate',
-                            candidate : candidate
-                        }));
+                        socket.emit('iceCandidate', candidate);
                     });
 
                     webRtcEndpoint.processOffer(sdpOffer, function(error, sdpAnswer) {
