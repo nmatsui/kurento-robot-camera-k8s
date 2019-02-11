@@ -1,6 +1,7 @@
 import http from 'http';
 import express from 'express';
 import * as client from './client';
+import * as utils from './utils';
 import log4js from 'log4js';
 
 const logger = log4js.getLogger('main');
@@ -13,8 +14,11 @@ app.use('/static', express.static('static'));
 const server = http.createServer(app);
 client.register(server);
 
+let iceServers = utils.getIceServers();
 app.get("/", (req, res) => {
-    res.render("./index.ejs", {});
+    res.render("./index.ejs", {
+        iceServers: JSON.stringify(iceServers)
+    });
 });
 
 const PORT = process.env.PORT || 3000;

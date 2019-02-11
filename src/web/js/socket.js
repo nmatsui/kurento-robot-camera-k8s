@@ -1,3 +1,4 @@
+// global iceServers
 import io from 'socket.io-client';
 import * as kurentoUtils from 'kurento-utils';
 import 'webrtc-adapter';
@@ -47,7 +48,7 @@ export function start(videoInput, videoOutput, startCallback) {
         remoteVideo: videoOutput,
         onicecandidate : onIceCandidate,
         configuration: {
-            iceServers: []
+            iceServers: iceServers ? iceServers : []
         }
     }
 
