@@ -1,6 +1,6 @@
 node_modules/
-dist/server.js
-static/js/client.js
+signaling/dist/server.js
+signaling/static/js/client.js
 .node-version
 .python-version
 .DS_Store
