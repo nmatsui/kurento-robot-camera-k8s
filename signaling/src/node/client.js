@@ -1,4 +1,4 @@
-import url from 'url';
+import urljoin from 'url-join';
 import SocketIO from 'socket.io';
 import kurento from 'kurento-client';
 import log4js from 'log4js';
@@ -8,6 +8,12 @@ logger.level = process.env.LOG_LEVEL || 'debug';
 
 const wsUri = process.env.KURENTO_URL || 'ws://localhost:8888/kurento';
 const asUri = process.env.APPSERVER_URL || 'http://localhost:3000/';
+const overlayImgPath = process.env.OVERLAY_IMG_PATH || 'static/img/mario-wings.png'
+
+logger.debug(`KURENTO_URL=${wsUri}`);
+logger.debug(`APPSERVER_URL=${asUri}`);
+logger.debug(`OVERLAY_IMG_PATH=${overlayImgPath}`);
+
 
 export function register(server) {
     let io = SocketIO(server);
@@ -182,7 +188,7 @@ function start(sessionId, socket, sdpOffer, isOverlay) {
                     return;
                 }
 
-                faceOverlayFilter.setOverlayedImage(url.format(asUri) + 'static/img/mario-wings.png',
+                faceOverlayFilter.setOverlayedImage(urljoin(asUri, overlayImgPath),
                     -0.35, -1.2, 1.6, 1.6, (error) => {
                     if (error) {
                         pipeline.release();
