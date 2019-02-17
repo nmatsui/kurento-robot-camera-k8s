@@ -1,6 +1,7 @@
 node_modules/
-signaling/dist/server.js
-signaling/static/js/client.js
+*/dist/*.js
+*/static/js/*.js
+*/static/css/*.css
 coturn/turnserver.conf
 kurento/WebRtcEndpoint.conf.ini
 secrets/*
