@@ -9,9 +9,12 @@ $(document).ready(() => {
     let videoInput = $('#videoInput').get(0);
     let videoOutput = $('#videoOutput').get(0);
 
-    $('#start').on('click', socket.start.bind(null, videoInput, videoOutput, () => {
-        showSpinner(videoInput, videoOutput);
-    }));
+    $('#start').on('click', () => {
+        socket.options.isOverlay = $('#isOverlay').prop('checked');
+        socket.start(videoInput, videoOutput, () => {
+            showSpinner(videoInput, videoOutput);
+        });
+    });
     $('#stop').on('click', socket.stop.bind(null, () => {
         hideSpinner(videoInput, videoOutput);
     }));
