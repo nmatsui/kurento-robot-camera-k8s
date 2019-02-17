@@ -1,0 +1,50 @@
+<%- contentFor('title') %>
+<title>Kurento One2Many : Viewer</title>
+
+<%- contentFor('content') %>
+<div class="mt-4 content-header">
+  <h1 class="h2">Kurento One2Many : Viewer</h1>
+  <small>
+    <p>指定した識別子のカメラ映像を、このブラウザで視聴します。</p>
+    <ol>
+      <li>このアプリケーションのパスフレーズとカメラの識別子を入力します。</li>
+      <li>スタートボタンを押します。</li>
+    </ol>
+  </small>
+</div>
+<hr/>
+<div class="mt-2">
+  <div class="row">
+    <div class="col">
+      <div class="h4">&nbsp;</div>
+      <form>
+        <div class="row">
+          <div class="form-group col-12">
+            <label for="passPhrase">パスフレーズ</label>
+            <input type="password" id="passPhrase" class="form-control" name="passPhrase" placeholder="passPhrase"/>
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group col-12">
+            <label for="cameraId">カメラ識別子</label>
+            <input type="text" id="cameraId" class="form-control" name="cameraId" placeholder="cameraId"/>
+          </div>
+        </div>
+      </form>
+      <br/>
+      <div class="row justify-content-start">
+        <div class="col-lg-3">
+          <button id="start" class="btn btn-success btn-block"><i class="fas fa-play-circle"></i>&nbsp; start</button>
+          <button id="stop" class="btn btn-danger btn-block"><i class="fas fa-stop-circle"></i>&nbsp; stop</button>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h4>Remote Stream</h4>
+      <video id="remoteStream" autoplay width="480px" height="360px" poster="/static/img/webrtc.png"></video>
+    </div>
+  </div>
+</div>
+
+<%- contentFor('script') %>
+<script src="/static/js/viewer.js"></script>
