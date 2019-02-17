@@ -7,6 +7,10 @@ import * as state from './state';
 let socket = null;
 let webRtcPeer = null;
 
+export let options = {
+    isOverlay :true
+}
+
 export function connect() {
     disconnect();
     socket = io();
@@ -37,7 +41,6 @@ export function disconnect() {
 export function start(videoInput, videoOutput, startCallback) {
     console.info('Starting video call ...')
 
-    // Disable start button
     state.set(state.I_AM_STARTING);
     startCallback();
 
@@ -79,7 +82,7 @@ function onOffer(error, offerSdp) {
     if(error) return onError(error);
 
     console.debug(`Invoking SDP offer callback function (${location.host}). offerSdp => ${offerSdp}`);
-    socket.emit('start', offerSdp);
+    socket.emit('start', offerSdp, options.isOverlay);
 }
 
 function onError(error) {

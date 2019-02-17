@@ -1,3 +1,4 @@
+import urljoin from 'url-join';
 import SocketIO from 'socket.io';
 import kurento from 'kurento-client';
 import log4js from 'log4js';
@@ -5,7 +6,14 @@ import log4js from 'log4js';
 const logger = log4js.getLogger('client');
 logger.level = process.env.LOG_LEVEL || 'debug';
 
-const ws_uri = process.env.KURENTO_URL || 'ws://localhost:8888/kurento';
+const wsUri = process.env.KURENTO_URL || 'ws://localhost:8888/kurento';
+const asUri = process.env.APPSERVER_URL || 'http://localhost:3000/';
+const overlayImgPath = process.env.OVERLAY_IMG_PATH || 'static/img/mario-wings.png'
+
+logger.debug(`KURENTO_URL=${wsUri}`);
+logger.debug(`APPSERVER_URL=${asUri}`);
+logger.debug(`OVERLAY_IMG_PATH=${overlayImgPath}`);
+
 
 export function register(server) {
     let io = SocketIO(server);
@@ -20,9 +28,9 @@ export function register(server) {
             stop(socket.id);
         });
 
-        socket.on('start', (sdpOffer) => {
+        socket.on('start', (sdpOffer, isOverlay) => {
             logger.info(`Connection ${socket.id} received 'start' sdpOffer => ${sdpOffer}`);
-            start(socket.id, socket, sdpOffer)
+            start(socket.id, socket, sdpOffer, isOverlay)
                 .then((sdpAnswer) => {
                     socket.emit('startResponse', sdpAnswer);
                 })
@@ -46,7 +54,7 @@ export function register(server) {
 let sessions = {};
 let candidatesQueue = {};
 
-function start(sessionId, socket, sdpOffer) {
+function start(sessionId, socket, sdpOffer, isOverlay) {
     return new Promise((resolve, reject) => {
         if (!sessionId) {
             reject('Cannot use undefined sessionId');
@@ -56,7 +64,13 @@ function start(sessionId, socket, sdpOffer) {
         getKurentoClient()
             .then(createMediaPipeline)
             .then(createWebRtcEndpoint)
-            .then(loopBack)
+            .then((resources) => {
+                if (isOverlay) {
+                    return faceOverlay(resources);
+                } else {
+                    return loopBack(resources);
+                }
+            })
             .then(connectMediaStream)
             .then((sdpAnswer) => {
                 resolve(sdpAnswer);
@@ -74,10 +88,10 @@ function start(sessionId, socket, sdpOffer) {
                 return;
             }
 
-            kurento(ws_uri, (error, _kurentoClient) => {
+            kurento(wsUri, (error, _kurentoClient) => {
                 if (error) {
-                    logger.error(`Could not find media server at address ws_uri`);
-                    reject(`Could not find media server at address ${ws_uri}. Exiting with error ${error}`);
+                    logger.error(`Could not find media server at address ${wsUri}`);
+                    reject(`Could not find media server at address ${wsUri}. Exiting with error ${error}`);
                     return;
                 }
 
@@ -132,6 +146,57 @@ function start(sessionId, socket, sdpOffer) {
                     return;
                 }
                 resolve(resources);
+            });
+        });
+    }
+
+    function faceOverlay(resources) {
+        return new Promise((resolve, reject) => {
+            createFaceOverlayFilter(resources.pipeline)
+                .then((faceOverlayFilter) => {
+                    return new Promise((res, rej) => {
+                        resources.webRtcEndpoint.connect(faceOverlayFilter, function(error) {
+                            if (error) {
+                                rej(error);
+                                return;
+                            }
+                            faceOverlayFilter.connect(resources.webRtcEndpoint, function(error) {
+                                if (error) {
+                                    rej(error);
+                                    return;
+                                }
+                                res();
+                            });
+                        });
+                    });
+                })
+                .then(() => {
+                    resolve(resources);
+                })
+                .catch((error) => {
+                    reject(error);
+                });
+        });
+    }
+
+    function createFaceOverlayFilter(pipeline) {
+        return new Promise((resolve, reject) => {
+            pipeline.create('FaceOverlayFilter', function(error, faceOverlayFilter) {
+                if (error) {
+                    pipeline.release();
+                    reject(error);
+                    return;
+                }
+
+                faceOverlayFilter.setOverlayedImage(urljoin(asUri, overlayImgPath),
+                    -0.35, -1.2, 1.6, 1.6, (error) => {
+                    if (error) {
+                        pipeline.release();
+                        reject(error);
+                        return;
+                    }
+                    resolve(faceOverlayFilter);
+                });
             });
         });
     }
