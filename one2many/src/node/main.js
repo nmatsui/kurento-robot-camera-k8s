@@ -1,6 +1,7 @@
 import http from 'http';
 import express from 'express';
 import ejsLayouts from 'express-ejs-layouts';
+import * as client from './libs/client';
 import log4js from 'log4js';
 
 const logger = log4js.getLogger('main');
@@ -12,6 +13,7 @@ app.use(ejsLayouts);
 app.use('/static', express.static('static'));
 
 const server = http.createServer(app);
+client.register(server);
 
 let iceServers = [];
 app.get("/", (req, res) => {
