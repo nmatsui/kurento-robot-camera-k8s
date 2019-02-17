@@ -3,6 +3,8 @@ signaling/dist/server.js
 signaling/static/js/client.js
 coturn/turnserver.conf
 kurento/WebRtcEndpoint.conf.ini
+secrets/*
+!.gitkeep
 .node-version
 .python-version
 .DS_Store
