@@ -19,3 +19,7 @@ $(document).ready(() => {
     utils.setUp(utils.Pages.VIEWER);
     console.log('viewer start');
 });
+
+$(window).on('beforeunload', () => {
+    utils.tearDown();
+});

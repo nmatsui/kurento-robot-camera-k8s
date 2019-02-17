@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import consoleLog from 'console-log-html';
 
 export const Pages = Object.freeze({
     VIEWER: Symbol('viewer'),
@@ -6,6 +7,7 @@ export const Pages = Object.freeze({
 });
 
 export function setUp(page) {
+    consoleLog.connect($('#console').get(0));
     switch (page) {
         case Pages.VIEWER:
             $('#navViewer').addClass('active');
@@ -25,4 +27,8 @@ export function setUp(page) {
     $('nav.navbar a.navbar-brand').on('click', (event) => {
         event.target.blur();
     });
+}
+
+export function tearDown() {
+    consoleLog.disconnect();
 }

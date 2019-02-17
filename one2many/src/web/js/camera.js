@@ -14,3 +14,6 @@ $(document).ready(() => {
     console.log('camera start');
 });
 
+$(window).on('beforeunload', () => {
+    utils.tearDown();
+});
