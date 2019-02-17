@@ -13,3 +13,6 @@
   outline: none !important;
   box-shadow: none !important;
 }
+.btn:disabled {
+  cursor: not-allowed;
+}

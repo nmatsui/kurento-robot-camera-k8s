@@ -1,16 +1,16 @@
 import $ from 'jquery';
 import 'bootstrap';
-import * as utils from './utils';
+import * as utils from './libs/utils';
 
 $(document).ready(() => {
-    $('#start').on('click', (event) => {
+    $('#start').on('click', () => {
         console.log('start');
     });
-    $('#stop').on('click', (event) => {
+    $('#stop').on('click', () => {
         console.log('stop');
     });
 
-    utils.setUp('camera');
+    utils.setUp(utils.Pages.CAMERA);
     console.log('camera start');
 });
 
