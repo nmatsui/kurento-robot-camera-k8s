@@ -14,6 +14,7 @@ logger.debug(`KURENTO_URL=${wsUri}`);
 if (!passPhrase || passPhrase.length == 0) {
     throw new Error('PASS_PHRASE is undefined');
 }
+logger.debug(`PASS_PHRASE=${passPhrase}`);
 
 let authedClients = {};
 let cameras = {};

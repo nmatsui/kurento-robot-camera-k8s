@@ -2,6 +2,7 @@ import http from 'http';
 import express from 'express';
 import ejsLayouts from 'express-ejs-layouts';
 import * as client from './libs/client';
+import * as utils from './libs/utils';
 import log4js from 'log4js';
 
 const logger = log4js.getLogger('main');
@@ -15,7 +16,7 @@ app.use('/static', express.static('static'));
 const server = http.createServer(app);
 client.register(server);
 
-let iceServers = [];
+let iceServers = utils.getIceServers();
 app.get("/", (req, res) => {
     res.redirect('/viewer');
 });
