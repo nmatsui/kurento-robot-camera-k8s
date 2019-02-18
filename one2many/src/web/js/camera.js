@@ -5,23 +5,14 @@ import * as socket from './libs/socket';
 
 $(document).ready(() => {
     let localStream = $('#localStream').get(0);
-    let $passPhrase = $('#passPhrase')
-    let $cameraId = $('#cameraId')
 
     $('#start').on('click', () => {
         console.log('start button clicked');
-        let passPhrase = $passPhrase.val();
-        if (!passPhrase || passPhrase.length == 0) {
-            console.error('passPhrase is not set');
-            return false;
+        let passPhrase = utils.getVal('passPhrase');
+        let cameraId = utils.getVal('cameraId');
+        if (passPhrase && cameraId) {
+            socket.start(passPhrase, cameraId, localStream, null);
         }
-        let cameraId = $cameraId.val();
-        if (!cameraId || cameraId.length == 0) {
-            console.error('cameraId is not set');
-            return false;
-        }
-
-        socket.start(passPhrase, cameraId, localStream, null);
     });
 
     $('#stop').on('click', () => {
@@ -30,7 +21,7 @@ $(document).ready(() => {
     });
 
     utils.setUp(utils.Pages.CAMERA);
-    socket.connect();
+    socket.connect('passPhrase', 'cameraId', 'alertHolder');
     console.log('camera page ready');
 });
 

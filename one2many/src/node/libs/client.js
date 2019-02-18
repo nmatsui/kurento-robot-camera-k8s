@@ -104,7 +104,7 @@ let sessions = {};
 let candidatesQueue = {};
 
 function startCamera(socket, sdpOffer, cameraId) {
-    logger.debug(`startCamera cameraId=${cameraId}`);
+    logger.debug(`startCamera sessionId=${socket.tid} cameraId=${cameraId}`);
     return new Promise((resolve, reject) => {
         clearCandidatesQueue(socket.id);
 
@@ -137,7 +137,7 @@ function startCamera(socket, sdpOffer, cameraId) {
 }
 
 function startViewer(socket, sdpOffer, cameraId) {
-    logger.debug(`startViewer cameraId=${cameraId}`);
+    logger.debug(`startViewer sessionId=${socket.id} cameraId=${cameraId}`);
     return new Promise((resolve, reject) => {
         if (!isCameraExistence(cameraId, reject)) return;
         if (!cameras[cameraId].resources) {
@@ -177,7 +177,7 @@ function startViewer(socket, sdpOffer, cameraId) {
 }
 
 function stop(sessionId) {
-    logger.debug(`disconnected from ${sessionId}`);
+    logger.debug(`stop sessionId=${sessionId}`);
     if (sessionId in authedClients) {
         let cameraId = authedClients[sessionId].cameraId;
         if (authedClients[sessionId].isCamera) {
@@ -185,7 +185,7 @@ function stop(sessionId) {
                 for (let viewerId in viewers[cameraId]) {
                     let viewerSocket = viewers[cameraId][viewerId].socket;
                     if(viewerSocket) {
-                        logger.debug(`send 'camera ${cameraId} down' to ${viewerSocket.id}`);
+                        logger.debug(`send 'camera ${cameraId} down' to ${viewerId}`);
                         viewerSocket.emit('cameraDown', cameraId);
                     }
                 }
@@ -214,6 +214,7 @@ function stop(sessionId) {
 }
 
 function onIceCandidate(sessionId, _candidate) {
+    logger.debug(`onIceCandidate sessionId=${sessionId}`);
     var candidate = kurento.getComplexType('IceCandidate')(_candidate);
 
     if (sessions[sessionId]) {
@@ -291,7 +292,7 @@ function connectMediaStream(resources, socket, sdpOffer, cameraId) {
         if (!isCameraExistence(cameraId, reject)) return;
 
         resources.webRtcEndpoint.on('OnIceCandidate', (event) => {
-            var candidate = kurento.getComplexType('IceCandidate')(event.candidate);
+            let candidate = kurento.getComplexType('IceCandidate')(event.candidate);
             socket.emit('iceCandidate', candidate);
         });
 

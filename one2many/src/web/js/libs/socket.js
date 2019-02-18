@@ -3,42 +3,57 @@ import io from 'socket.io-client';
 import * as kurentoUtils from 'kurento-utils';
 import 'webrtc-adapter';
 import state from './state';
+import * as utils from './utils';
 
 let socket = null;
 let webRtcPeer = null;
 
-export function connect() {
-    disconnect();
+export function connect(authElem, cameraElem, alertElem) {
+    console.log('connect socket');
     socket = io();
 
     socket.on('error', (error) => {
         dispose();
-        onError('Error message from server: ' + error);
+        let errmsg = `failed when starting Kurento; ${JSON.stringify(error)}`;
+        onError(errmsg);
+        utils.setAlert(alertElem, 'danger', 'Kurento Error', errmsg);
     });
 
     socket.on('noAuth', () => {
         dispose();
-        onError('Authentication failed');
+        let errmsg = 'authentication failed. passPhrase mismatch.';
+        onError(errmsg);
+        utils.setInvalidFeedback(authElem, errmsg);
     });
 
     socket.on('duplicateCameraId', (cameraId) => {
         dispose();
-        onError(`this cameraId (${cameraId}) is duplicated`);
+        let errmsg = `this cameraId (${cameraId}) has already been used.`;
+        onError(errmsg);
+        utils.setInvalidFeedback(cameraElem, errmsg);
     });
 
     socket.on('noCameraId', (cameraId) => {
         dispose();
-        onError(`this camera (${cameraId}) does not exist`);
+        let errmsg = `this camera (${cameraId}) does not exist.`;
+        onError(errmsg);
+        utils.setInvalidFeedback(cameraElem, errmsg);
     });
 
     socket.on('cameraDown', (cameraId) => {
         dispose();
-        onError(`remote camera (${cameraId})is down`);
+        let errmsg = `remote camera (${cameraId}) went down`;
+        onError(errmsg);
+        utils.setAlert(alertElem, 'warning', 'Camera Down', errmsg);
+        disconnect();
+        socket = io();
     });
 
     socket.on('startError', (error) => {
         dispose();
-        onError('Error message from server: ' + error);
+        let errmsg = `failed when starting Kurento; ${JSON.stringify(error)}`;
+        onError(errmsg);
+        utils.setAlert(alertElem, 'danger', 'Kurento Error', errmsg);
     });
 
     socket.on('startResponse', (sdpAnswer) => {
@@ -50,7 +65,14 @@ export function connect() {
     });
 }
 
+export function reconnect() {
+    disconnect();
+    console.log('reconnect socket');
+    socket = io();
+}
+
 export function disconnect() {
+    console.log('disconnect socket');
     dispose();
     if (socket) {
         socket.close();
@@ -102,18 +124,21 @@ export function stop() {
 function onOffer(error, offerSdp, target, cameraId) {
     if(error) return console.log(error);
 
-    console.debug(`Invoking SDP offer callback function (${location.host}). offerSdp => ${offerSdp}`);
+    console.log(`Invoking SDP offer callback function (${location.host}). offerSdp =>`);
+    console.debug(offerSdp);
     socket.emit(target, offerSdp, cameraId);
 }
 
 function onIceCandidate(candidate) {
-    console.debug(`Local candidate ${JSON.stringify(candidate)}`);
+    console.log(`Local candidate =>`);
+    console.debug(JSON.stringify(candidate));
     socket.emit('onIceCandidate', candidate);
 }
 
 function startResponse(sdpAnswer) {
     state.set(state.I_CAN_STOP);
-    console.debug(`SDP answer received from server. Processing ... sdpAnswer => ${sdpAnswer}`);
+    console.log('SDP answer received from server. Processing ... sdpAnswer =>');
+    console.debug(JSON.stringify(sdpAnswer));
     webRtcPeer.processAnswer(sdpAnswer);
 }
 
@@ -125,6 +150,6 @@ function dispose() {
     state.set(state.I_CAN_START);
     if (webRtcPeer) {
         webRtcPeer.dispose();
-        webRtcPeer = null;
     }
+    webRtcPeer = null;
 }

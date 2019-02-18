@@ -14,6 +14,7 @@
 </div>
 <hr/>
 <div class="mt-2">
+  <div id="alertHolder"></div>
   <div class="row">
     <div class="col">
       <h4>Local Stream</h4>
@@ -26,12 +27,14 @@
           <div class="form-group col-12">
             <label for="passPhrase">パスフレーズ</label>
             <input type="password" id="passPhrase" class="form-control" name="passPhrase" placeholder="passPhrase"/>
+            <div id="passPhraseMsg"></div>
           </div>
         </div>
         <div class="row">
           <div class="form-group col-12">
             <label for="cameraId">カメラ識別子</label>
             <input type="text" id="cameraId" class="form-control" name="cameraId" placeholder="cameraId"/>
+            <div id="cameraIdMsg"></div>
           </div>
         </div>
       </form>
