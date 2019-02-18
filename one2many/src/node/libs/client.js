@@ -17,7 +17,6 @@ if (!passPhrase || passPhrase.length == 0) {
 
 let authedClients = {};
 let cameras = {};
-let viewers = {};
 
 export function register(server) {
     let io = SocketIO(server);
@@ -109,24 +108,14 @@ function startCamera(socket, sdpOffer, cameraId) {
         clearCandidatesQueue(socket.id);
 
         cameras[cameraId] = {
-            sessionId: socket.id
-        }
+            cameraSessionId: socket.id,
+            viewers: {},
+        };
 
         getKurentoClient()
             .then((kurentoClient) => createMediaPipeline(kurentoClient, cameraId))
             .then((pipeline) => createWebRtcEndpoint(pipeline, socket.id, cameraId))
-            .then((resources) => {
-                return new Promise((resolve, reject) => {
-                    if (!isCameraExistence(cameraId, reject)) return;
-
-                    cameras[cameraId].resources = resources;
-                    viewers[cameraId] = {
-                        cameraSessionId: socket.id
-                    };
-                    resolve(resources);
-                });
-            })
-            .then((resources) => connectMediaStream(resources, socket, sdpOffer, cameraId))
+            .then((resources) => processOffer(resources, socket, sdpOffer, cameraId))
             .then((sdpAnswer) => {
                 resolve(sdpAnswer);
             })
@@ -140,23 +129,24 @@ function startViewer(socket, sdpOffer, cameraId) {
     logger.debug(`startViewer sessionId=${socket.id} cameraId=${cameraId}`);
     return new Promise((resolve, reject) => {
         if (!isCameraExistence(cameraId, reject)) return;
-        if (!cameras[cameraId].resources) {
-            reject('the mediaPipeline of camera does not exist');
+        if (!cameras[cameraId].cameraSessionId || !sessions[cameras[cameraId].cameraSessionId]) {
+            reject('the mediaPipeline of camera does not exist. check cameraId and retry later.');
             return;
         }
 
         clearCandidatesQueue(socket.id);
+        let pipeline = sessions[cameras[cameraId].cameraSessionId].pipeline;
 
-        createWebRtcEndpoint(cameras[cameraId].resources.pipeline, socket.id, cameraId)
+        createWebRtcEndpoint(pipeline, socket.id, cameraId)
             .then((resources) => {
                 return new Promise((resolve, reject) => {
                     if (!isCameraExistence(cameraId, reject)) return;
 
-                    viewers[cameraId][socket.id] = {
-                        resources: resources,
+                    let cameraSessionId = cameras[cameraId].cameraSessionId;
+                    cameras[cameraId].viewers[socket.id] = {
                         socket: socket,
-                    }
-                    cameras[cameraId].resources.webRtcEndpoint.connect(resources.webRtcEndpoint, (error) => {
+                    };
+                    sessions[cameraSessionId].webRtcEndpoint.connect(resources.webRtcEndpoint, (error) => {
                         if (!isCameraExistence(cameraId, reject)) return;
                         if (error) {
                             reject(error);
@@ -166,7 +156,7 @@ function startViewer(socket, sdpOffer, cameraId) {
                     });
                 });
             })
-            .then((resources) => connectMediaStream(resources, socket, sdpOffer, cameraId))
+            .then((resources) => processOffer(resources, socket, sdpOffer, cameraId))
             .then((sdpAnswer) => {
                 resolve(sdpAnswer);
             })
@@ -180,29 +170,24 @@ function stop(sessionId) {
     logger.debug(`stop sessionId=${sessionId}`);
     if (sessionId in authedClients) {
         let cameraId = authedClients[sessionId].cameraId;
-        if (authedClients[sessionId].isCamera) {
-            if (viewers[cameraId]) {
-                for (let viewerId in viewers[cameraId]) {
-                    let viewerSocket = viewers[cameraId][viewerId].socket;
+        if (cameras[cameraId]) {
+            if (authedClients[sessionId].isCamera) {
+                for (let viewerId in cameras[cameraId].viewers) {
+                    let viewerSocket = cameras[cameraId].viewers[viewerId].socket;
                     if(viewerSocket) {
                         logger.debug(`send 'camera ${cameraId} down' to ${viewerId}`);
                         viewerSocket.emit('cameraDown', cameraId);
                     }
                 }
-            }
-            if (cameras[cameraId]) {
                 logger.debug(`release camera ${cameraId} pipeline`);
-                cameras[cameraId].resources.pipeline.release();
+                sessions[sessionId].pipeline.release();
                 delete cameras[cameraId];
-            }
-            if (viewers[cameraId]) {
-                delete viewers[cameraId];
-            }
-        } else {
-            if (viewers[cameraId] && viewers[cameraId][sessionId]) {
-                logger.debug(`release webRtcEndpoint of camera ${cameraId}'s viewer`);
-                viewers[cameraId][sessionId].resources.webRtcEndpoint.release();
-                delete viewers[cameraId][sessionId];
+            } else {
+                if (cameras[cameraId].viewers[sessionId]) {
+                    logger.debug(`release webRtcEndpoint of camera ${cameraId}'s viewer ${sessionId}`);
+                    sessions[sessionId].webRtcEndpoint.release();
+                    delete cameras[cameraId].viewers[sessionId];
+                }
             }
         }
     }
@@ -287,7 +272,7 @@ function createWebRtcEndpoint(pipeline, sessionId, cameraId) {
     });
 }
 
-function connectMediaStream(resources, socket, sdpOffer, cameraId) {
+function processOffer(resources, socket, sdpOffer, cameraId) {
     return new Promise((resolve, reject) => {
         if (!isCameraExistence(cameraId, reject)) return;
 
@@ -334,7 +319,7 @@ function isAuthenticate(socket) {
 
 function isCameraExistence(cameraId, reject) {
     if (!(cameraId in cameras)) {
-        reject(`this camera ${cameraId} has been removed`);
+        reject(`this camera ${cameraId} has been removed. check cameraId and retry later.`);
         return false;
     }
     return true;
