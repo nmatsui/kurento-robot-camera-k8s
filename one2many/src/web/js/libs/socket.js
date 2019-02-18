@@ -45,8 +45,7 @@ export function connect(authElem, cameraElem, alertElem) {
         let errmsg = `remote camera (${cameraId}) went down`;
         onError(errmsg);
         utils.setAlert(alertElem, 'warning', 'Camera Down', errmsg);
-        disconnect();
-        socket = io();
+        stop();
     });
 
     socket.on('startError', (error) => {
@@ -63,12 +62,6 @@ export function connect(authElem, cameraElem, alertElem) {
     socket.on('iceCandidate', (candidate) => {
         webRtcPeer.addIceCandidate(candidate);
     });
-}
-
-export function reconnect() {
-    disconnect();
-    console.log('reconnect socket');
-    socket = io();
 }
 
 export function disconnect() {
