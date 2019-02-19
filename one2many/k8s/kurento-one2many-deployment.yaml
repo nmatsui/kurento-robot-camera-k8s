@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: one2many
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: one2many
+  template:
+    metadata:
+      labels:
+        app: one2many
+    spec:
+      containers:
+      - name: one2many
+        image: k8saksacr.azurecr.io/tech-sketch/kurento-one2many:0.0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: one2many
+        env:
+        - name: PORT
+          value: "3000"
+        - name: KURENTO_URL
+          value: "ws://kurento:8888/kurento"
+        - name: PASS_PHRASE
+          valueFrom:
+            secretKeyRef:
+              name: one2many-secrets
+              key: PASS_PHRASE
+        - name: STUN_LIST
+          valueFrom:
+            secretKeyRef:
+              name: one2many-secrets
+              key: STUN_LIST
+        - name: TURN_LIST
+          valueFrom:
+            secretKeyRef:
+              name: one2many-secrets
+              key: TURN_LIST

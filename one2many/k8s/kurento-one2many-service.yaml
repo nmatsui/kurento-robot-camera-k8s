@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: one2many
+  labels:
+    app: one2many
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  one2many-mapping
+      prefix: /
+      host: "^one2many\\..+$"
+      host_regex: true
+      service: http://one2many:3000
+      use_websocket: true
+spec:
+  type: ClusterIP
+  selector:
+    app: one2many
+  ports:
+  - port: 3000
+    targetPort: one2many
+    name: one2many
