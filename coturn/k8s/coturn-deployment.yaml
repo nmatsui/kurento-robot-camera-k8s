@@ -19,7 +19,38 @@ spec:
         args: ["-c", "/opt/coturn/turnserver.conf"]
         ports:
         - containerPort: 80
-          name: coturn
+          name: coturn-listen
+          protocol: UDP
+        - containerPort: 49150
+          name: coturn-udp0
+          protocol: UDP
+        - containerPort: 49151
+          name: coturn-udp1
+          protocol: UDP
+        - containerPort: 49152
+          name: coturn-udp2
+          protocol: UDP
+        - containerPort: 49153
+          name: coturn-udp3
+          protocol: UDP
+        - containerPort: 49154
+          name: coturn-udp4
+          protocol: UDP
+        - containerPort: 49155
+          name: coturn-udp5
+          protocol: UDP
+        - containerPort: 49156
+          name: coturn-udp6
+          protocol: UDP
+        - containerPort: 49157
+          name: coturn-udp7
+          protocol: UDP
+        - containerPort: 49158
+          name: coturn-udp8
+          protocol: UDP
+        - containerPort: 49159
+          name: coturn-udp9
+          protocol: UDP
         volumeMounts:
         - name: conf
           mountPath: "/opt/coturn"
