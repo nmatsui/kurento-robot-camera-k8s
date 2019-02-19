@@ -12,10 +12,13 @@
     <%- title %>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
         <a class="navbar-brand" href="#">Kurento One2Many</a>
-        <div class="collapse navbar-collapse">
+        <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="switch navbar">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbar-collapse">
           <ul class="navbar-nav mr-auto">
             <li id="navViewer" class="nav-item">
               <a class="nav-link" href="/viewer">Viewer</a>

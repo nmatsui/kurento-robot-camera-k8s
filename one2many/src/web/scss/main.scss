@@ -1,6 +1,15 @@
 @CHARSET "UTF-8";
 @import "custom";
 
+$sp: 360px;
+
+@mixin sp {
+  @media (max-width: ($sp)) {
+    @content;
+  }
+}
+
+
 div.content-header {
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
@@ -11,4 +20,15 @@ ul.console {
   width: 100%;
   background-color: #fff;
   height: 200px;
+}
+div.videoHolder {
+  width: 360px;
+}
+video.kurentoStream {
+  width: 360px;
+  height: 270px;
+
+  @include sp {
+    margin-left: -15px;
+  }
 }

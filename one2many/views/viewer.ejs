@@ -15,7 +15,7 @@
 <hr/>
 <div class="mt-2">
   <div id="alertHolder"></div>
-  <div class="row">
+  <div class="row no-gutter">
     <div class="col">
       <div class="h4">&nbsp;</div>
       <form>
@@ -44,7 +44,9 @@
     </div>
     <div class="col">
       <h4>Remote Stream</h4>
-      <video id="remoteStream" autoplay width="480px" height="360px" poster="/static/img/webrtc.png" class="kurentoStream"></video>
+      <div class="mx-auto videoHolder ml-0 mr-0">
+        <video id="remoteStream" autoplay poster="/static/img/webrtc.png" class="kurentoStream"></video>
+      </div>
     </div>
   </div>
 </div>
