@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: coturn-tcp
+  name: coturn
   labels:
     app: coturn
 spec:
@@ -9,7 +9,47 @@ spec:
   selector:
     app: coturn
   ports:
-  - name: coturn-tcp
+  - name: coturn-listen
     port: 80
-    protocol: TCP
-    targetPort: coturn
+    protocol: UDP
+    targetPort: coturn-listen
+  - name: coturn-udp0
+    port: 49150
+    protocol: UDP
+    targetPort: coturn-udp0
+  - name: coturn-udp1
+    port: 49151
+    protocol: UDP
+    targetPort: coturn-udp1
+  - name: coturn-udp2
+    port: 49152
+    protocol: UDP
+    targetPort: coturn-udp2
+  - name: coturn-udp3
+    port: 49153
+    protocol: UDP
+    targetPort: coturn-udp3
+  - name: coturn-udp4
+    port: 49154
+    protocol: UDP
+    targetPort: coturn-udp4
+  - name: coturn-udp5
+    port: 49155
+    protocol: UDP
+    targetPort: coturn-udp5
+  - name: coturn-udp6
+    port: 49156
+    protocol: UDP
+    targetPort: coturn-udp6
+  - name: coturn-udp7
+    port: 49157
+    protocol: UDP
+    targetPort: coturn-udp7
+  - name: coturn-udp8
+    port: 49158
+    protocol: UDP
+    targetPort: coturn-udp8
+  - name: coturn-udp9
+    port: 49159
+    protocol: UDP
+    targetPort: coturn-udp9

@@ -2,5 +2,14 @@ lt-cred-mech
 no-tls
 no-dtls
 listening-port=80
+min-port=49150
+max-port=49159
+
+# change realm
 realm=coturn.example.com
+
+# change username and password
 user=username:password
+
+# change external-ip of 'coturn' service
+external-ip=xxx.xxx.xxx.xxx
