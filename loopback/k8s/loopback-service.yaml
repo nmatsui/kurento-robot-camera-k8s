@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: signaling
+  name: loopback
   labels:
-    app: signaling
+    app: loopback
   annotations:
     getambassador.io/config: |
       ---
       apiVersion: ambassador/v0
       kind:  Mapping
-      name:  signaling-mapping
+      name:  loopback-mapping
       prefix: /
-      host: "^signaling\\..+$"
+      host: "^loopback\\..+$"
       host_regex: true
-      service: http://signaling:3000
+      service: http://loopback:3000
       use_websocket: true
 spec:
   type: ClusterIP
   selector:
-    app: signaling
+    app: loopback
   ports:
   - port: 3000
-    targetPort: signaling
-    name: signaling
+    targetPort: loopback
+    name: loopback
