@@ -23,7 +23,7 @@ spec:
         - name: PORT
           value: "3000"
         - name: KURENTO_URL
-          value: "ws://kurento:8888/kurento"
+          value: "ws://kurento-0.kurento:8888/kurento"
         - name: PASS_PHRASE
           valueFrom:
             secretKeyRef:
