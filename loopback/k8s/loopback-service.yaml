@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: loopback
+  labels:
+    app: loopback
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  loopback-mapping
+      prefix: /
+      host: "^loopback\\..+$"
+      host_regex: true
+      service: http://loopback:3000
+      use_websocket: true
+spec:
+  type: ClusterIP
+  selector:
+    app: loopback
+  ports:
+  - port: 3000
+    targetPort: loopback
+    name: loopback

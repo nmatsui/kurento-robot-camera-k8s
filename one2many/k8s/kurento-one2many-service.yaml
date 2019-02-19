@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: signaling
+  name: one2many
   labels:
-    app: signaling
+    app: one2many
   annotations:
     getambassador.io/config: |
       ---
       apiVersion: ambassador/v0
       kind:  Mapping
-      name:  signaling-mapping
+      name:  one2many-mapping
       prefix: /
-      host: "^signaling\\..+$"
+      host: "^one2many\\..+$"
       host_regex: true
-      service: http://signaling:3000
+      service: http://one2many:3000
       use_websocket: true
 spec:
   type: ClusterIP
   selector:
-    app: signaling
+    app: one2many
   ports:
   - port: 3000
-    targetPort: signaling
-    name: signaling
+    targetPort: one2many
+    name: one2many
