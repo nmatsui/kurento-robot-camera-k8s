@@ -80,8 +80,15 @@ export function start(passPhrase, cameraId, localVideo, remoteVideo) {
     socket.emit('authenticate', passPhrase, (result) => {
         if (result) {
             console.log('authenticate success');
+            let constraints = {
+                audio: false,
+                video: {
+                    framerate: 15
+                }
+            };
             let options = {
                 onicecandidate : onIceCandidate,
+                mediaConstraints: constraints,
                 configuration: {
                     iceServers: iceServers ? iceServers : []
                 }
