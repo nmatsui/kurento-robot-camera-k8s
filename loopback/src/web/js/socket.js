@@ -46,10 +46,20 @@ export function start(videoInput, videoOutput, startCallback) {
 
     console.info('Creating WebRtcPeer and generating local sdp offer ...');
 
-    var options = {
+    let constraints = {
+        audio: false,
+        video: {
+            width: 480,
+            height: 360,
+            framerate: 15
+        }
+    };
+
+    let options = {
         localVideo: videoInput,
         remoteVideo: videoOutput,
         onicecandidate : onIceCandidate,
+        mediaConstraints: constraints,
         configuration: {
             iceServers: iceServers ? iceServers : []
         }

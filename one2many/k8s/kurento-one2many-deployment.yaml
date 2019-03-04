@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: one2many
-        image: k8saksacr.azurecr.io/tech-sketch/kurento-one2many:0.0.1
+        image: k8saksacr.azurecr.io/tech-sketch/kurento-one2many:0.0.2
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
