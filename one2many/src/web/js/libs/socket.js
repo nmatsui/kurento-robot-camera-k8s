@@ -73,10 +73,34 @@ export function disconnect() {
     socket = null;
 }
 
-export function start(passPhrase, cameraId, localVideo, remoteVideo) {
-    console.log('Starting video call ...');
+export function startCamera(passPhrase, cameraId, localVideo) {
+    console.log('Starting camera ...');
     state.set(state.I_AM_STARTING);
 
+    let target = 'camera';
+    let options = {
+        localVideo: localVideo
+    }
+    let peerFunc = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly;
+
+    _start(passPhrase, cameraId, target, options, peerFunc);
+}
+
+export function startViewer(passPhrase, cameraId, remoteVideo) {
+    console.log('Starting viewer ...');
+    state.set(state.I_AM_STARTING);
+
+    let target = 'viewer';
+    let options = {
+        remoteVideo: remoteVideo
+    }
+    let peerFunc = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly;
+
+    _start(passPhrase, cameraId, target, options, peerFunc);
+}
+
+function _start(passPhrase, cameraId, target, extraOptions, peerFunc) {
+    console.log('Starting video call ...');
     socket.emit('authenticate', passPhrase, (result) => {
         if (result) {
             console.log('authenticate success');
@@ -86,26 +110,16 @@ export function start(passPhrase, cameraId, localVideo, remoteVideo) {
                     framerate: 15
                 }
             };
-            let options = {
+            let baseOptions = {
                 onicecandidate : onIceCandidate,
                 mediaConstraints: constraints,
                 configuration: {
                     iceServers: iceServers ? iceServers : []
                 }
             }
-            let target = '';
+            let options = Object.assign({}, baseOptions, extraOptions);
 
-            if (localVideo && !remoteVideo) {
-                options.localVideo = localVideo;
-                target = 'camera';
-            } else if (!localVideo && remoteVideo) {
-                options.remoteVideo = remoteVideo;
-                target = 'viewer';
-            } else {
-                throw new Error('video setting error');
-            }
-
-            webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options, (error) => {
+            webRtcPeer = peerFunc(options, (error) => {
                 if(error) return onError(error);
                 webRtcPeer.generateOffer((error, offerSdp) => {
                     onOffer(error, offerSdp, target, cameraId);
