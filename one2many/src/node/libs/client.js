@@ -1,4 +1,3 @@
-// import urljoin from 'url-join';
 import SocketIO from 'socket.io';
 import kurento from 'kurento-client';
 import log4js from 'log4js';
@@ -104,7 +103,7 @@ let sessions = {};
 let candidatesQueue = {};
 
 function startCamera(socket, sdpOffer, cameraId) {
-    logger.debug(`startCamera sessionId=${socket.tid} cameraId=${cameraId}`);
+    logger.debug(`startCamera sessionId=${socket.id} cameraId=${cameraId}`);
     return new Promise((resolve, reject) => {
         clearCandidatesQueue(socket.id);
 
@@ -220,6 +219,11 @@ function onIceCandidate(sessionId, _candidate) {
 function getKurentoClient() {
     let kurentoClient = null;
     return new Promise((resolve, reject) => {
+        if (kurentoClient != null) {
+            resolve(kurentoClient);
+            return;
+        }
+
         kurento(wsUri, (error, _kurentoClient) => {
             if (error) {
                 logger.error(`Could not find media server at address ${wsUri}`);
