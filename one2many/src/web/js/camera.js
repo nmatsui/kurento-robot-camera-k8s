@@ -11,7 +11,7 @@ $(document).ready(() => {
         let passPhrase = utils.getVal('passPhrase');
         let cameraId = utils.getVal('cameraId');
         if (passPhrase && cameraId) {
-            socket.start(passPhrase, cameraId, localStream, null);
+            socket.startCamera(passPhrase, cameraId, localStream);
         }
     });
 
