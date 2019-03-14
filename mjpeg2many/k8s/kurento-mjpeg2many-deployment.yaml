@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mjpeg2many
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mjpeg2many
+  template:
+    metadata:
+      labels:
+        app: mjpeg2many
+    spec:
+      containers:
+      - name: mjpeg2many
+        image: k8saksacr.azurecr.io/tech-sketch/kurento-mjpeg2many:0.0.3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: mjpeg2many
+        env:
+        - name: PORT
+          value: "3000"
+        - name: KURENTO_URL
+          value: "ws://kurento-0.kurento:8888/kurento"
+        - name: PASS_PHRASE
+          valueFrom:
+            secretKeyRef:
+              name: mjpeg2many-secrets
+              key: PASS_PHRASE
+        - name: STUN_LIST
+          valueFrom:
+            secretKeyRef:
+              name: mjpeg2many-secrets
+              key: STUN_LIST
+        - name: TURN_LIST
+          valueFrom:
+            secretKeyRef:
+              name: mjpeg2many-secrets
+              key: TURN_LIST

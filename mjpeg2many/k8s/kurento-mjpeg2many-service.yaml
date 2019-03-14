@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mjpeg2many
+  labels:
+    app: mjpeg2many
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind:  Mapping
+      name:  mjpeg2many-mapping
+      prefix: /
+      host: "^mjpeg2many\\..+$"
+      host_regex: true
+      service: http://mjpeg2many:3000
+      use_websocket: true
+spec:
+  type: ClusterIP
+  selector:
+    app: mjpeg2many
+  ports:
+  - port: 3000
+    targetPort: mjpeg2many
+    name: mjpeg2many
