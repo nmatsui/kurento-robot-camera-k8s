@@ -1,0 +1,48 @@
+{
+  "name": "kurento-mjpeg2many",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/**/*.js",
+    "prebuild": "npm run lint",
+    "build": "webpack",
+    "watch": "webpack --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.2.3",
+    "autoprefixer": "^9.4.7",
+    "babel-loader": "^8.0.5",
+    "css-loader": "^2.1.0",
+    "eslint": "^5.12.0",
+    "mini-css-extract-plugin": "^0.5.0",
+    "node-sass": "^4.11.0",
+    "postcss-loader": "^3.0.0",
+    "precss": "^4.0.0",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.29.4",
+    "webpack-cli": "^3.2.3",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.2.5",
+    "bootstrap": "^4.3.1",
+    "console-log-html": "^2.0.2",
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
+    "jquery": "^3.3.1",
+    "kurento-client": "Kurento/kurento-client-js",
+    "kurento-utils": "^6.9.0",
+    "log4js": "^4.0.2",
+    "popper.js": "^1.14.7",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
+    "webrtc-adapter": "^7.2.0",
+    "websocket-stream": "^5.1.2"
+  }
+}
