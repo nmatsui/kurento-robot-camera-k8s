@@ -26,6 +26,12 @@ export function connect(authElem, mjpegStreamElem, alertElem) {
         utils.setInvalidFeedback(authElem, errmsg);
     });
 
+    socket.on('mjpegStreamError', (msg) => {
+        dispose();
+        onError(msg);
+        utils.setInvalidFeedback(mjpegStreamElem, msg);
+    });
+
     socket.on('startError', (error) => {
         dispose();
         let errmsg = `failed when starting Kurento; ${JSON.stringify(error)}`;

@@ -1,5 +1,6 @@
 import SocketIO from 'socket.io';
 import kurento from 'kurento-client';
+import request from 'request';
 import log4js from 'log4js';
 
 const logger = log4js.getLogger('client');
@@ -47,14 +48,36 @@ export function register(server) {
         socket.on('start', (sdpOffer, mjpegStreamUri) => {
             logger.info(`received start message ${socket.id}: sdpOffer => ${sdpOffer}`);
             if (!isAuthenticate(socket)) return;
-            start(socket, sdpOffer, mjpegStreamUri)
-                .then((sdpAnswer) => {
-                    socket.emit('startResponse', sdpAnswer);
-                })
-                .catch((error) => {
-                    socket.emit('startError', error);
-                    stop(socket.id);
-                });
+
+            let emitError = (errmsg) => {
+                logger.warn(`mjpeg stream (${mjpegStreamUri}) GET failed, err = ${errmsg}`);
+                socket.emit('mjpegStreamError', `${errmsg}`);
+                return;
+            };
+            try {
+                let req = request
+                    .get(mjpegStreamUri)
+                    .on('error', emitError)
+                    .on('response', (res) => {
+                        if (res.statusCode != 200) {
+                            return emitError(`StatusCodeError: statusCode = ${res.statusCode}`);
+                        }
+
+                        logger.debug(`mjpeg stream (${mjpegStreamUri}) GET success, statusCode=${res.statusCode}`);
+                        req.pause();
+                        req.abort();
+                        start(socket, sdpOffer, mjpegStreamUri)
+                            .then((sdpAnswer) => {
+                                socket.emit('startResponse', sdpAnswer);
+                            })
+                            .catch((error) => {
+                                socket.emit('startError', error);
+                                stop(socket.id);
+                            });
+                    });
+            } catch (err) {
+                emitError(err);
+            }
         });
 
         socket.on('stop', () => {
