@@ -196,6 +196,10 @@ function stop(sessionId) {
         delete sessions[sessionId];
         delete candidatesQueue[sessionId];
     }
+
+    if (authedClients[sessionId]) {
+        delete authedClients[sessionId];
+    }
 }
 
 function onIceCandidate(sessionId, _candidate) {
