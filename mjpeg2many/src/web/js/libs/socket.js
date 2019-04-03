@@ -8,7 +8,7 @@ import * as utils from './utils';
 let socket = null;
 let webRtcPeer = null;
 
-export function connect(authElem, cameraElem, alertElem) {
+export function connect(authElem, mjpegStreamElem, alertElem) {
     console.log('connect socket');
     socket = io();
 
@@ -26,26 +26,10 @@ export function connect(authElem, cameraElem, alertElem) {
         utils.setInvalidFeedback(authElem, errmsg);
     });
 
-    socket.on('duplicateCameraId', (cameraId) => {
+    socket.on('mjpegStreamError', (msg) => {
         dispose();
-        let errmsg = `this cameraId (${cameraId}) has already been used.`;
-        onError(errmsg);
-        utils.setInvalidFeedback(cameraElem, errmsg);
-    });
-
-    socket.on('noCameraId', (cameraId) => {
-        dispose();
-        let errmsg = `this camera (${cameraId}) does not exist.`;
-        onError(errmsg);
-        utils.setInvalidFeedback(cameraElem, errmsg);
-    });
-
-    socket.on('cameraDown', (cameraId) => {
-        dispose();
-        let errmsg = `remote camera (${cameraId}) went down`;
-        onError(errmsg);
-        utils.setAlert(alertElem, 'warning', 'Camera Down', errmsg);
-        stop();
+        onError(msg);
+        utils.setInvalidFeedback(mjpegStreamElem, msg);
     });
 
     socket.on('startError', (error) => {
@@ -73,56 +57,32 @@ export function disconnect() {
     socket = null;
 }
 
-export function startCamera(passPhrase, cameraId, localVideo) {
-    console.log('Starting camera ...');
+export function start(passPhrase, mjpegStreamUri, remoteVideo) {
+    console.log('Starting page ...');
     state.set(state.I_AM_STARTING);
 
-    let target = 'camera';
+    let constraints = {
+        audio: false,
+        video: {
+            framerate: 15
+        }
+    };
+
     let options = {
-        localVideo: localVideo
-    }
-    let peerFunc = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly;
+        remoteVideo: remoteVideo,
+        onicecandidate : onIceCandidate,
+        mediaConstraints: constraints,
+        configuration: {
+            iceServers: iceServers ? iceServers : []
+        }
+    };
 
-    _start(passPhrase, cameraId, target, options, peerFunc);
-}
-
-export function startViewer(passPhrase, cameraId, remoteVideo) {
-    console.log('Starting viewer ...');
-    state.set(state.I_AM_STARTING);
-
-    let target = 'viewer';
-    let options = {
-        remoteVideo: remoteVideo
-    }
-    let peerFunc = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly;
-
-    _start(passPhrase, cameraId, target, options, peerFunc);
-}
-
-function _start(passPhrase, cameraId, target, extraOptions, peerFunc) {
-    console.log('Starting video call ...');
     socket.emit('authenticate', passPhrase, (result) => {
         if (result) {
-            console.log('authenticate success');
-            let constraints = {
-                audio: false,
-                video: {
-                    framerate: 15
-                }
-            };
-            let baseOptions = {
-                onicecandidate : onIceCandidate,
-                mediaConstraints: constraints,
-                configuration: {
-                    iceServers: iceServers ? iceServers : []
-                }
-            }
-            let options = Object.assign({}, baseOptions, extraOptions);
-
-            webRtcPeer = peerFunc(options, (error) => {
+            webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, (error) => {
                 if(error) return onError(error);
                 webRtcPeer.generateOffer((error, offerSdp) => {
-                    onOffer(error, offerSdp, target, cameraId);
+                    onOffer(error, offerSdp, mjpegStreamUri);
                 });
             });
         }
@@ -135,12 +95,12 @@ export function stop() {
     dispose();
 }
 
-function onOffer(error, offerSdp, target, cameraId) {
+function onOffer(error, offerSdp, mjpegStreamUri) {
     if(error) return console.log(error);
 
     console.log(`Invoking SDP offer callback function (${location.host}). offerSdp =>`);
     console.debug(offerSdp);
-    socket.emit(target, offerSdp, cameraId);
+    socket.emit('start', offerSdp, mjpegStreamUri);
 }
 
 function onIceCandidate(candidate) {

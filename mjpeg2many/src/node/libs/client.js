@@ -1,5 +1,6 @@
 import SocketIO from 'socket.io';
 import kurento from 'kurento-client';
+import request from 'request';
 import log4js from 'log4js';
 
 const logger = log4js.getLogger('client');
@@ -16,7 +17,6 @@ if (!passPhrase || passPhrase.length == 0) {
 logger.debug(`PASS_PHRASE=${passPhrase}`);
 
 let authedClients = {};
-let cameras = {};
 
 export function register(server) {
     let io = SocketIO(server);
@@ -45,44 +45,39 @@ export function register(server) {
             }
         });
 
-        socket.on('camera', (sdpOffer, cameraId) => {
-            logger.info(`start 'camera' ${socket.id}: cameraId => ${cameraId}, sdpOffer => ${sdpOffer}`);
+        socket.on('start', (sdpOffer, mjpegStreamUri) => {
+            logger.info(`received start message ${socket.id}: sdpOffer => ${sdpOffer}`);
             if (!isAuthenticate(socket)) return;
-            if (cameraId in cameras) {
-                socket.emit('duplicateCameraId', cameraId);
+
+            let emitError = (errmsg) => {
+                logger.warn(`mjpeg stream (${mjpegStreamUri}) GET failed, err = ${errmsg}`);
+                socket.emit('mjpegStreamError', `${errmsg}`);
                 return;
+            };
+            try {
+                let req = request
+                    .get(mjpegStreamUri)
+                    .on('error', emitError)
+                    .on('response', (res) => {
+                        if (res.statusCode != 200) {
+                            return emitError(`StatusCodeError: statusCode = ${res.statusCode}`);
+                        }
+
+                        logger.debug(`mjpeg stream (${mjpegStreamUri}) GET success, statusCode=${res.statusCode}`);
+                        req.pause();
+                        req.abort();
+                        start(socket, sdpOffer, mjpegStreamUri)
+                            .then((sdpAnswer) => {
+                                socket.emit('startResponse', sdpAnswer);
+                            })
+                            .catch((error) => {
+                                socket.emit('startError', error);
+                                stop(socket.id);
+                            });
+                    });
+            } catch (err) {
+                emitError(err);
             }
-            authedClients[socket.id].cameraId = cameraId;
-            authedClients[socket.id].isCamera = true;
-
-            startCamera(socket, sdpOffer, cameraId)
-                .then((sdpAnswer) => {
-                    socket.emit('startResponse', sdpAnswer);
-                })
-                .catch((error) => {
-                    socket.emit('startError', error);
-                    stop(socket.id);
-                });
-        });
-
-        socket.on('viewer', (sdpOffer, cameraId) => {
-            logger.info(`start 'viewer' ${socket.id}: cameraId => ${cameraId}, sdpOffer => ${sdpOffer}`);
-            if (!isAuthenticate(socket)) return;
-            if (!(cameraId in cameras)) {
-                socket.emit('noCameraId', cameraId);
-                return;
-            }
-            authedClients[socket.id].cameraId = cameraId;
-            authedClients[socket.id].isCamera = false;
-
-            startViewer(socket, sdpOffer, cameraId)
-                .then((sdpAnswer) => {
-                    socket.emit('startResponse', sdpAnswer);
-                })
-                .catch((error) => {
-                    socket.emit('startError', error);
-                    stop(socket.id);
-                });
         });
 
         socket.on('stop', () => {
@@ -102,61 +97,16 @@ export function register(server) {
 let sessions = {};
 let candidatesQueue = {};
 
-function startCamera(socket, sdpOffer, cameraId) {
-    logger.debug(`startCamera sessionId=${socket.id} cameraId=${cameraId}`);
+function start(socket, sdpOffer, mjpegStreamUri) {
+    logger.debug(`start sessionId=${socket.id} mjpegStreamUri=${mjpegStreamUri}`);
     return new Promise((resolve, reject) => {
         clearCandidatesQueue(socket.id);
-
-        cameras[cameraId] = {
-            cameraSessionId: socket.id,
-            viewers: {},
-        };
 
         getKurentoClient()
-            .then((kurentoClient) => createMediaPipeline(kurentoClient, cameraId))
-            .then((pipeline) => createWebRtcEndpoint(pipeline, socket.id, cameraId))
-            .then((resources) => processOffer(resources, socket, sdpOffer, cameraId))
-            .then((sdpAnswer) => {
-                resolve(sdpAnswer);
-            })
-            .catch((error) => {
-                reject(error);
-            });
-    });
-}
-
-function startViewer(socket, sdpOffer, cameraId) {
-    logger.debug(`startViewer sessionId=${socket.id} cameraId=${cameraId}`);
-    return new Promise((resolve, reject) => {
-        if (!isCameraExistence(cameraId, reject)) return;
-        if (!cameras[cameraId].cameraSessionId || !sessions[cameras[cameraId].cameraSessionId]) {
-            reject('the mediaPipeline of camera does not exist. check cameraId and retry later.');
-            return;
-        }
-
-        clearCandidatesQueue(socket.id);
-        let pipeline = sessions[cameras[cameraId].cameraSessionId].pipeline;
-
-        createWebRtcEndpoint(pipeline, socket.id, cameraId)
-            .then((resources) => {
-                return new Promise((resolve, reject) => {
-                    if (!isCameraExistence(cameraId, reject)) return;
-
-                    let cameraSessionId = cameras[cameraId].cameraSessionId;
-                    cameras[cameraId].viewers[socket.id] = {
-                        socket: socket,
-                    };
-                    sessions[cameraSessionId].webRtcEndpoint.connect(resources.webRtcEndpoint, (error) => {
-                        if (!isCameraExistence(cameraId, reject)) return;
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-                        resolve(resources);
-                    });
-                });
-            })
-            .then((resources) => processOffer(resources, socket, sdpOffer, cameraId))
+            .then(createMediaPipeline)
+            .then((pipeline) => createWebRtcEndpoint(pipeline, socket.id))
+            .then((resources) => connectMediaStream(resources, mjpegStreamUri))
+            .then((resources) => processOffer(resources, socket, sdpOffer))
             .then((sdpAnswer) => {
                 resolve(sdpAnswer);
             })
@@ -168,31 +118,11 @@ function startViewer(socket, sdpOffer, cameraId) {
 
 function stop(sessionId) {
     logger.debug(`stop sessionId=${sessionId}`);
-    if (sessionId in authedClients) {
-        let cameraId = authedClients[sessionId].cameraId;
-        if (cameras[cameraId]) {
-            if (authedClients[sessionId].isCamera) {
-                for (let viewerId in cameras[cameraId].viewers) {
-                    let viewerSocket = cameras[cameraId].viewers[viewerId].socket;
-                    if(viewerSocket) {
-                        logger.debug(`send 'camera ${cameraId} down' to ${viewerId}`);
-                        viewerSocket.emit('cameraDown', cameraId);
-                    }
-                }
-                logger.debug(`release camera ${cameraId} pipeline`);
-                sessions[sessionId].pipeline.release();
-                delete cameras[cameraId];
-            } else {
-                if (cameras[cameraId].viewers[sessionId]) {
-                    logger.debug(`release webRtcEndpoint of camera ${cameraId}'s viewer ${sessionId}`);
-                    sessions[sessionId].webRtcEndpoint.release();
-                    delete cameras[cameraId].viewers[sessionId];
-                }
-            }
-        }
-    }
-
     if (sessions[sessionId]) {
+        let pipeline = sessions[sessionId].pipeline;
+        logger.debug('Releasing pipeline');
+        pipeline.release();
+
         delete sessions[sessionId];
         delete candidatesQueue[sessionId];
     }
@@ -241,10 +171,8 @@ function getKurentoClient() {
     });
 }
 
-function createMediaPipeline(kurentoClient, cameraId) {
+function createMediaPipeline(kurentoClient) {
     return new Promise((resolve, reject) => {
-        if (!isCameraExistence(cameraId, reject)) return;
-
         kurentoClient.create('MediaPipeline', (error, pipeline) => {
             if (error) {
                 reject(error);
@@ -255,10 +183,8 @@ function createMediaPipeline(kurentoClient, cameraId) {
     });
 }
 
-function createWebRtcEndpoint(pipeline, sessionId, cameraId) {
+function createWebRtcEndpoint(pipeline, sessionId) {
     return new Promise((resolve, reject) => {
-        if (!isCameraExistence(cameraId, reject)) return;
-
         pipeline.create('WebRtcEndpoint', (error, webRtcEndpoint) => {
             if (error) {
                 pipeline.release();
@@ -281,10 +207,36 @@ function createWebRtcEndpoint(pipeline, sessionId, cameraId) {
     });
 }
 
-function processOffer(resources, socket, sdpOffer, cameraId) {
+function connectMediaStream(resources, mjpegStreamUri) {
     return new Promise((resolve, reject) => {
-        if (!isCameraExistence(cameraId, reject)) return;
+        resources.pipeline.create("PlayerEndpoint", {uri: mjpegStreamUri}, (error, playerEndpoint) => {
+            if (error) {
+                resources.pipeline.release();
+                reject(error);
+                return;
+            }
 
+            playerEndpoint.connect(resources.webRtcEndpoint, (error) => {
+                if (error) {
+                    resources.pipeline.release();
+                    reject(error);
+                    return;
+                }
+                playerEndpoint.play((error) => {
+                    if (error) {
+                        resources.pipeline.release();
+                        reject(error);
+                        return;
+                    }
+                    resolve(resources);
+                });
+            });
+        });
+    });
+}
+
+function processOffer(resources, socket, sdpOffer) {
+    return new Promise((resolve, reject) => {
         resources.webRtcEndpoint.on('OnIceCandidate', (event) => {
             let candidate = kurento.getComplexType('IceCandidate')(event.candidate);
             socket.emit('iceCandidate', candidate);
@@ -296,7 +248,6 @@ function processOffer(resources, socket, sdpOffer, cameraId) {
                 reject(error);
                 return;
             }
-            if (!isCameraExistence(cameraId, reject)) return;
 
             sessions[socket.id] = resources;
 
@@ -321,14 +272,6 @@ function clearCandidatesQueue(sessionId) {
 function isAuthenticate(socket) {
     if (!(socket.id in authedClients)) {
         socket.emit('noAuth');
-        return false;
-    }
-    return true;
-}
-
-function isCameraExistence(cameraId, reject) {
-    if (!(cameraId in cameras)) {
-        reject(`this camera ${cameraId} has been removed. check cameraId and retry later.`);
         return false;
     }
     return true;

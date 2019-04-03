@@ -4,25 +4,24 @@ import * as utils from './libs/utils';
 import * as socket from './libs/socket';
 
 $(document).ready(() => {
-    let localStream = $('#localStream').get(0);
+    let remoteStream = $('#remoteStream').get(0);
 
     $('#start').on('click', () => {
         console.log('start button clicked');
         let passPhrase = utils.getVal('passPhrase');
-        let cameraId = utils.getVal('cameraId');
-        if (passPhrase && cameraId) {
-            socket.startCamera(passPhrase, cameraId, localStream);
+        let mjpegStreamUri = utils.getVal('mjpegStreamUri');
+        if (passPhrase && mjpegStreamUri) {
+            socket.start(passPhrase, mjpegStreamUri, remoteStream);
         }
     });
-
     $('#stop').on('click', () => {
         console.log('stop button clicked');
         socket.stop();
     });
 
-    utils.setUp(utils.Pages.CAMERA);
-    socket.connect('passPhrase', 'cameraId', 'alertHolder');
-    console.log('camera page ready');
+    utils.setUp();
+    socket.connect('passPhrase', 'mjpegStreamUri', 'alertHolder');
+    console.log('index page ready');
 });
 
 $(window).on('beforeunload', () => {
