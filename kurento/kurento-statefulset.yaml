@@ -20,10 +20,10 @@ spec:
         - containerPort: 8888
           name: kurento
         volumeMounts:
-        - name: kurento-turnserver
+        - name: kurento-webrtcendpoint-conf
           mountPath: "/etc/kurento/modules/kurento/WebRtcEndpoint.conf.ini"
           subPath: "WebRtcEndpoint.conf.ini"
       volumes:
-      - name: kurento-turnserver
+      - name: kurento-webrtcendpoint-conf
         secret:
-          secretName: "kurento-turnserver"
+          secretName: "kurento-webrtcendpoint-conf"
