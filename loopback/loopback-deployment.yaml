@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: loopback
-        image: k8saksacr.azurecr.io/tech-sketch/kurento-loopback:0.0.2
+        image: nmatsui/kurento-robot-camera-loopback:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
