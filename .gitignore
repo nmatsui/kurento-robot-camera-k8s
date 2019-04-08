@@ -6,6 +6,7 @@ coturn/turnserver.conf
 kurento/WebRtcEndpoint.conf.ini
 secrets/*
 !.gitkeep
+!*.template
 .node-version
 .python-version
 .DS_Store
