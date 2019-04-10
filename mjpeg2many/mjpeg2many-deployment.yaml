@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: mjpeg2many
-        image: k8saksacr.azurecr.io/tech-sketch/kurento-mjpeg2many:0.0.3
+        image: nmatsui/kurento-robot-camera-mjpeg2many:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
