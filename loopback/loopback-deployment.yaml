@@ -1,41 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mjpeg2many
+  name: loopback
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mjpeg2many
+      app: loopback
   template:
     metadata:
       labels:
-        app: mjpeg2many
+        app: loopback
     spec:
       containers:
-      - name: mjpeg2many
-        image: k8saksacr.azurecr.io/tech-sketch/kurento-mjpeg2many:0.0.3
+      - name: loopback
+        image: nmatsui/kurento-robot-camera-loopback:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
-          name: mjpeg2many
+          name: loopback
         env:
         - name: PORT
           value: "3000"
         - name: KURENTO_URL
           value: "ws://kurento-0.kurento:8888/kurento"
-        - name: PASS_PHRASE
-          valueFrom:
-            secretKeyRef:
-              name: mjpeg2many-secrets
-              key: PASS_PHRASE
+        - name: APPSERVER_URL
+          value: "http://loopback:3000/"
+        - name: OVERLAY_IMG_PATH
+          value: "static/img/mario-wings.png"
         - name: STUN_LIST
           valueFrom:
             secretKeyRef:
-              name: mjpeg2many-secrets
+              name: loopback-secrets
               key: STUN_LIST
         - name: TURN_LIST
           valueFrom:
             secretKeyRef:
-              name: mjpeg2many-secrets
+              name: loopback-secrets
               key: TURN_LIST
