@@ -20,9 +20,9 @@ This system uses the [Kurento media server](http://www.kurento.org/) to relay th
 
 ## How to use
 Please see below blogs:
-  https://qiita.com/nmatsui/items/d1f7ceaa84cf805ee636
-  https://qiita.com/nmatsui/items/8bc9dc224fd9d288c56c
-  https://qiita.com/nmatsui/items/30adbeebd15b4c3de0ea
+* https://qiita.com/nmatsui/items/d1f7ceaa84cf805ee636
+* https://qiita.com/nmatsui/items/8bc9dc224fd9d288c56c
+* https://qiita.com/nmatsui/items/30adbeebd15b4c3de0ea
 
 ## License
 
